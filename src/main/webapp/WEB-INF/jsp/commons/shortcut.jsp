@@ -5,9 +5,9 @@
     <ul class="fr topTh">
       <li class="login" id="login">
       	<span id="loginbar" style="margin-right: 15px;">
-	      	<a href="https://passport.e3mall.cn/?returnUrl=http%3A//www.e3mall.cn/">请登录</a>
+	      	<a href="http://localhost:8088/page/login">请登录</a>
       	</span>
-      	<a href="https://passport.e3mall.cn/reg/?returnUrl=http%3A//www.e3mall.cn/">免费注册</a>
+      	<a href="http://localhost:8088/page/register">免费注册</a>
       </li>
       <!--<li id='qiyeLogin'><a href='http://www.sfme.me/login.jhtml' target='_blank' rel='nofollow'>员工福利</a></li>-->
       <li class="myOrder"><a name="sfbest_hp_hp_head_OrderList" class="trackref" href="http://home.e3mall.cn/myorder/index/" rel="nofollow">我的订单</a></li>
@@ -102,6 +102,145 @@
     </ul>
     <span class="clear"></span>
   </div>
-  <script type="text/javascript" src="/js/e3mall.js"></script>
   <script type="text/javascript" src="/js/jquery.cookie.js"></script>
+  <script type="text/javascript">
+  
+  (function (factory) {
+		if (typeof define === 'function' && define.amd) {
+			// AMD
+			define(['jquery'], factory);
+		} else if (typeof exports === 'object') {
+			// CommonJS
+			factory(require('jquery'));
+		} else {
+			// Browser globals
+			factory(jQuery);
+		}
+	}(function ($) {
+
+		var pluses = /\+/g;
+
+		function encode(s) {
+			return config.raw ? s : encodeURIComponent(s);
+		}
+
+		function decode(s) {
+			return config.raw ? s : decodeURIComponent(s);
+		}
+
+		function stringifyCookieValue(value) {
+			return encode(config.json ? JSON.stringify(value) : String(value));
+		}
+
+		function parseCookieValue(s) {
+			if (s.indexOf('"') === 0) {
+				// This is a quoted cookie as according to RFC2068, unescape...
+				s = s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+			}
+
+			try {
+				// Replace server-side written pluses with spaces.
+				// If we can't decode the cookie, ignore it, it's unusable.
+				// If we can't parse the cookie, ignore it, it's unusable.
+				s = decodeURIComponent(s.replace(pluses, ' '));
+				return config.json ? JSON.parse(s) : s;
+			} catch(e) {}
+		}
+
+		function read(s, converter) {
+			var value = config.raw ? s : parseCookieValue(s);
+			return $.isFunction(converter) ? converter(value) : value;
+		}
+
+		var config = $.cookie = function (key, value, options) {
+
+			// Write
+
+			if (value !== undefined && !$.isFunction(value)) {
+				options = $.extend({}, config.defaults, options);
+
+				if (typeof options.expires === 'number') {
+					var days = options.expires, t = options.expires = new Date();
+					t.setTime(+t + days * 864e+5);
+				}
+
+				return (document.cookie = [
+					encode(key), '=', stringifyCookieValue(value),
+					options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+					options.path    ? '; path=' + options.path : '',
+					options.domain  ? '; domain=' + options.domain : '',
+					options.secure  ? '; secure' : ''
+				].join(''));
+			}
+
+			// Read
+
+			var result = key ? undefined : {};
+
+			// To prevent the for loop in the first place assign an empty array
+			// in case there are no cookies at all. Also prevents odd result when
+			// calling $.cookie().
+			var cookies = document.cookie ? document.cookie.split('; ') : [];
+
+			for (var i = 0, l = cookies.length; i < l; i++) {
+				var parts = cookies[i].split('=');
+				var name = decode(parts.shift());
+				var cookie = parts.join('=');
+
+				if (key && key === name) {
+					// If second argument (value) is a function it's a converter...
+					result = read(cookie, value);
+					break;
+				}
+
+				// Prevent storing a cookie that we couldn't decode.
+				if (!key && (cookie = read(cookie)) !== undefined) {
+					result[name] = cookie;
+				}
+			}
+
+			return result;
+		};
+
+		config.defaults = {};
+
+		$.removeCookie = function (key, options) {
+			if ($.cookie(key) === undefined) {
+				return false;
+			}
+
+			// Must not alter options, thus extending a fresh object...
+			$.cookie(key, '', $.extend({}, options, { expires: -1 }));
+			return !$.cookie(key);
+		};
+
+	}));
+
+  
+  var E3MALL = {
+			checkLogin : function(){
+				var _ticket = $.cookie("token");
+				if(!_ticket){
+					return ;
+				}
+				$.ajax({
+					url : "http://localhost:8088/user/token/" + _ticket,
+					dataType : "jsonp",
+					type : "GET",
+					success : function(data){
+						if(data.status == 200){
+							var username = data.data.username;
+							var html = username + "，欢迎来到宜立方购物网！<a href=\"http://localhost:8088/user/logout/"+ _ticket+"\" class=\"link-logout\">[退出]</a>";
+							$("#loginbar").html(html);
+						}
+					}
+				});
+			}
+		}
+
+		$(function(){
+			// 查看是否已经登录，如果已经登录查询登录信息
+			E3MALL.checkLogin();
+		});
+  </script>
 </div>
